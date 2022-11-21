@@ -1,9 +1,12 @@
-﻿using System.Text;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 
 
 //
 ETicaretContext context = new();
+
 #region
 /*Urun urun = new Urun()
 {
@@ -434,9 +437,10 @@ await context.SaveChangesAsync();
 #endregion
 
 #region Context Nesnesi üzerinden Change Tracker
+/*
 var urun = await context.Urunler.FirstOrDefaultAsync(u => u.Id == 55);
 urun.Fiyat = 213213; // Modified yapıldı.
-
+*/
 #region OriginalValues Property'si
 /*
  Veritabanındaki orjinal fiyat bilgisini verir bize.
@@ -456,27 +460,154 @@ Console.WriteLine(urunAdi);
 #endregion
 #endregion
 
+#region AsNoTracking methodu
+/*
+ *  Context üzerinden gelen tüm datalar ChangeTracker mekanizması tarafından takip edilmektedir.
+ *  Change Tracker, Takip ettiği nesnelerin sayısıyla doğru orantılı olacak şekiled bir maaliyete sahiptir.
+ *  O yüzden üzerinde işlem yapılmayacak verilerin takip edilmesi bizlere lüzumsuz yere bir maaliyet ortaya çıkartacaktır.
+ */
+
+/*
+ * As no Tracking metodu, context üzerinden sorgu neticesinde gelecek olan verilerin Change Tracker tarafından takip edilmesini engeller!
+ * As no Trachking metodu ile ChangeTracker'ın ihtiyaç olmayan verilerdeki maaliyetini törpülemiş oluruz.
+ * 
+ * AsNoTracking fonksiyonu ile yapılan sorgulamalarda, verileri elde edebilir, bu verileri istenilen noktalarda kullanabilir,
+ * lakin veriler üzerinde herhangi bir değişiklik/update işlemi yapamayız.( Db üzerinde savechanges üzerinden hızlı bir şekilde gerçekleştiremeyiz )
+ * 
+ */
+
+// AsNoTracking i IQueryable kısmında iken çağırmamız gerekiyor!
+/*
+var urunler = await context.Urunler.AsNoTracking().ToListAsync(); // TÜm veriler geldi ve ChangeTracker hepsini dinliyor.
+foreach(var urun in urunler)
+{
+    Console.WriteLine(urun.UrunAdi);
+}
+*/
+
+// AsNoTracking metodu ile yapılan sorgularda yinelenen datalar farklı instancelarda karşılanırlar.
+
+#endregion
+
+#region Relationships(İlişkiler)
+
+#region Principal Entity(Asıl Entity)
+/*
+ * Kendi başına var olabilen tabloyu modelleyen entity'e denir.
+ * Çalışan, Departman ilişkisinde departman asıl entity dir. Çünkü çalışan departmansız olamaz ama departman çalışansız var olabilir.
+ */
+
+#endregion
+
+#region Depentent Entity(Bağımlı Entity)
+/*
+ * Kendi başına var olamayan, bir başka tabloya bağımlı olan tabloyu modelleyen entity' e denir.
+ * Çalışan,Departman ilişkisinde Çalışan Departmansız varolamadığı için Dependent entity olur.
+ */
+#endregion
+
+#region Foreign Key
+/*
+ * Principal entity ile Dependent Entity arasındaki ilişkiyi sağlayan keydir.
+ 
+
+*/
+#endregion
+#region Navigation Property Nedir?
+/*
+ * İlişkisel tablolar arasındaki fiziksel erişimi entity class'ları üzerinden sağlayan propertylerdir.
+ * Bir property^nin navigation property olabilmesi için kesinlikle entity türünden olması gerekiyor!
+ */
+#endregion
+
+#region EFCore' da İlişki Yapılandırma Yöntemleri
+#region Default Conventions
+/*
+ * Varsayılan entity kurallarını kullanarak yapılan işiki yapılandırma yöntemleridir.
+ * Navigation Property'lerini kullanarak ilişki şablonlarını çıkarmaktadır.
+ */
+#endregion
+
+#region Data Annotations Attributes
+/*
+ * Navigation Property'ler tanımlanmalıdır.
+ * Entity'nin niteliklerine göre ince ayarlar yapmamızı sağlayan Attribut'lardır.
+ * Foreign kolonunun ismi default convention'In dışında bir kolon olacaksa eğer ForeignKey attribute ile bunu bildirebbiliriz.
+ * [Key],[ForeignKey] gibi Attributelar bunlara örnektir. 
+ * 1 e 1 ilişkide ekstradan foreign key kolonuna ihtiyaç olmayacağından dolayı dependent etitiy deki id kolonu hem foreign key-
+ * hem de primary key olarak kullanmayı tercih ediyoruz ve bu duruma özen gösterilmelidir.
+ */
+#endregion
+
+#region Fluent API
+/*
+ * Entity modellerindeki ilişkileri yapılandırırken daha  detaylı çalışmamızı sağlayan yöntemdir.
+ */
+#endregion
+
+
+#region HasOne
+/*
+ * İlgili Entity nin ilişkisel Entity'ye birebir ya da bire çok olacak şekilde ilişkisini yapılandırmaya başlayan metoddur.
+ */
+#endregion
+#region HasMany
+/*
+ * İlgili entity'nin ilişkisel entity'ye çoka bir ya da çoka çok olacak şekilde ilişkisini yapılandırmaya başlayan metoddur.
+ */
+#endregion
+
+
+
+#endregion
+
+#endregion
+
+
+#region Default Convention
+/*
+ * Her iki entity'de Navigation Propery ile birbirlerini tekil olarak referans ederek fiziksel bir ilişkinin olacağı ifade edilir. 
+ */
+#endregion
+
+
+
 
 // For Debugging
 Console.WriteLine();
 
 
+/*
+ * Navigation propertyler Entity lerdeki tanımlarına göre n'e n veya 1'e n şeklinde ilişki türlerini ifade etmektedirler.
+ */
+
 public class ETicaretContext : DbContext
 {
+    
+    DbSet<Calisan> Calisanlar { get; set; }
+    DbSet<CalisanAdresi> CalisanAdresleri { get; set; }
 
-    public DbSet<Urun> Urunler { get; set; }
-    public DbSet<Parca> Parcalar{ get; set; }
-    public DbSet<UrunParca> UrunParca { get; set; }
-         
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         optionsBuilder.UseNpgsql("User ID=postgres;Password=ismailei123;Host=localhost;Port=5432;Database=ETicaretDB");
     }
-    protected override void OnModelCreating(ModelBuilder builder) {
-        builder.Entity<UrunParca>().HasKey(up => new { up.UrunId, up.ParcaId });
-    }
 
+
+    /*
+     * Model'ların (Entity) veritabanında generate edilecek yapılarının konfigurasyonları bu fonksiyon içerisinde konfigure edilir.
+     */
+
+    // Fluent API
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        //CalisanAdresine 1-1 ilişki , Calisan danda 1 e 1 Calisana ilişki oluştur diyoruzz.
+        modelBuilder.Entity<Calisan>()
+            .HasOne(c => c.CalisanAdresi)
+            .WithOne(c => c.Calisan)
+            .HasForeignKey<CalisanAdresi>(c => c.Id); // CalisanAdresimizin Id si Foreign Key olacka yani Dependent entity mizi declare etmiş olduk
+    }
     // Change Tracker'ın Interceptor olarak kullanılması
+    /*
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         var entries = ChangeTracker.Entries();
@@ -484,18 +615,35 @@ public class ETicaretContext : DbContext
         {
             if(entry.State == EntityState.Added)
             {
-                /* 
-                 * Db ye gitmeden önce araya girebiliriz burada.
-                 */
                 
+
             }
         }
         return base.SaveChangesAsync(cancellationToken);
     }
 
+    */
+
 }
 
 
+//
+public class Calisan
+{
+    public int Id { get; set; }
+    public string Adi { get; set; }
+    public CalisanAdresi CalisanAdresi { get; set; } // Navigation Property
+}
+// Calisan Adresi Dependent bir Entity'dir.
+public class CalisanAdresi
+{
+    // Hem Primary Keysin, Hem Foreign Key sin
+    [Key, ForeignKey(nameof(Calisan))]
+    public int Id { get; set; }
+    public string Adres { get; set; }
+    public Calisan Calisan { get; set; }
+}
+/*
 public class Urun
 {
     public int? Id { get; set; }
@@ -505,7 +653,7 @@ public class Urun
     public ICollection<Parca> Parcalar { get; set; }
 
 }
-public class Parca
+ public class Parca
 {
     public int? Id { get; set; }
     public string ParcaAdi { get; set; }
@@ -526,6 +674,7 @@ public class UrunDetay
     public int? Id { get; set; }
     public float Fiyat { get; set; }
 }
+*/
 
 #region OnConfiguring
 /*------------ OnConfiguring -------------
